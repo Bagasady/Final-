@@ -1,0 +1,47 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+# Change BaseURI to only handle API requests
+PassengerAppRoot "/home/xptndash/public_html/Kepstock"
+PassengerBaseURI "/api" # <-- Penting: Hanya tangani /api
+PassengerNodejs "/home/xptndash/nodevenv/public_html/Kepstock/18/bin/node"
+PassengerAppType node
+PassengerStartupFile server/index.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN
+<IfModule Litespeed>
+SetEnv NODE_ENV production
+SetEnv DB_HOST localhost
+SetEnv DB_USER xptndash_user
+SetEnv DB_NAME xptndash_keepstock_db
+SetEnv DB_PASSWORD 10Nepika6we#
+SetEnv JWT_SECRET your_actual_jwt_secret
+SetEnv FRONTEND_URL https://xptndashboard.site
+</IfModule>
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END
+
+# BEGIN Frontend SPA + Static File Rules
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Exclude /api from frontend processing (handled by Passenger)
+  RewriteRule ^api/ - [L]
+
+  # Langsung izinkan file-file yang ada
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Fallback semua request ke index.html (SPA)
+  RewriteRule . /Kepstock/dist/index.html [L]
+</IfModule>
+
+<IfModule mod_mime.c>
+  # Tambahkan MIME type
+  AddType text/css .css
+  AddType application/javascript .js
+</IfModule>
+
+# Optional - agar direktori tidak bisa diakses langsung
+Options -Indexes +FollowSymLinks
+# END Frontend SPA + Static File Rules
