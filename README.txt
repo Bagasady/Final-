@@ -1,261 +1,105 @@
-# KeepStock XPTN - Inventory Management System
+# KeepStock XPTN - Deployment Guide
 
-## Project Overview
-KeepStock XPTN is a comprehensive inventory management system built with:
-- Frontend: React + TypeScript + Tailwind CSS
-- Backend: Node.js + Express
-- Database: MySQL
-- Authentication: JWT-based
+## Struktur Direktori
 
-## Features
-- Multi-role user system (Store, Manager, Admin)
-- Real-time inventory tracking
-- Box-based storage management
-- Activity logging
-- Analytics dashboard
-- CSV data import/export
-- Dark mode support
+```
+public_html/
+└── Kepstock/
+    ├── dist/          # Frontend build output
+    │   ├── index.html
+    │   └── assets/    # Static assets (JS, CSS, images)
+    ├── server/        # Backend Node.js files
+    └── .htaccess      # Apache configuration
+```
 
-## Security Features
-1. Authentication & Authorization
-   - JWT-based authentication
-   - Role-based access control
-   - Password hashing with bcrypt
-   - Token expiration and refresh
+## Langkah-langkah Deployment
 
-2. Database Security
-   - Prepared statements for SQL injection prevention
-   - Transaction support for data integrity
-   - Connection pooling
-   - Secure password storage
-
-3. API Security
-   - CORS protection
-   - Rate limiting
-   - Helmet.js security headers
-   - Input validation
-   - Error handling
-
-## Local Development Setup
-
-1. Database Setup
+1. Persiapan Database
 ```sql
--- Create database
 CREATE DATABASE keepstock_db;
-
--- Create tables (see schema in Database Setup section)
-```
-
-2. Environment Configuration
-```bash
-# Create .env file with:
-PORT=3000
-NODE_ENV=development
-DB_HOST=localhost
-DB_USER=your_username
-DB_PASSWORD=your_password
-DB_NAME=keepstock_db
-JWT_SECRET=your_secure_jwt_secret
-FRONTEND_URL=http://localhost:5173
-```
-
-3. Install Dependencies
-```bash
-npm install
-```
-
-4. Start Development Servers
-```bash
-npm run dev
-```
-
-## Production Deployment
-
-1. Web Server Setup (Apache/Nginx)
-
-Apache Configuration:
-```apache
-<VirtualHost *:80>
-    ServerName yourdomain.com
-    DocumentRoot /var/www/keepstock/dist
-
-    <Directory /var/www/keepstock/dist>
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-
-    # API Proxy
-    ProxyPass /api http://localhost:3000/api
-    ProxyPassReverse /api http://localhost:3000/api
-</Directory>
-</VirtualHost>
-```
-
-Nginx Configuration:
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-    root /var/www/keepstock/dist;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-2. Database Setup
-```bash
-# Create production database
-mysql -u root -p
-CREATE DATABASE keepstock_db;
-CREATE USER 'keepstock_user'@'localhost' IDENTIFIED BY 'strong_password';
+CREATE USER 'keepstock_user'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON keepstock_db.* TO 'keepstock_user'@'localhost';
 FLUSH PRIVILEGES;
-
-# Import schema
-mysql -u keepstock_user -p keepstock_db < database/schema.sql
 ```
 
-3. Node.js Setup
+2. Build Frontend
 ```bash
-# Install Node.js
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install PM2
-npm install -g pm2
-
-# Build frontend
+# Di lokal development
 npm run build
-
-# Start backend with PM2
-pm2 start server/index.js --name keepstock
-pm2 startup
-pm2 save
 ```
 
-4. SSL Configuration (Let's Encrypt)
-```bash
-sudo apt-get install certbot
-sudo certbot --apache # or --nginx
-```
+3. Upload File
+   - Upload seluruh isi folder `dist` ke `/public_html/Kepstock/dist/`
+   - Upload folder `server` ke `/public_html/Kepstock/server/`
+   - Upload `.htaccess` ke `/public_html/Kepstock/`
 
-## Backup Strategy
+4. Setup Node.js di cPanel
+   - Buka "Setup Node.js App" di cPanel
+   - Pilih Node.js versi 18.x
+   - Set direktori aplikasi: /home/xptndash/public_html/Kepstock
+   - Set startup file: server/index.js
+   - Set NPM dependencies mode: Production
+   - Klik "Create"
 
-1. Database Backups
-```bash
-# Create backup script
-#!/bin/bash
-BACKUP_DIR="/path/to/backups"
-DATE=$(date +%Y%m%d_%H%M%S)
-mysqldump -u keepstock_user -p keepstock_db > $BACKUP_DIR/keepstock_$DATE.sql
-gzip $BACKUP_DIR/keepstock_$DATE.sql
+5. Konfigurasi Environment Variables di cPanel
+   - NODE_ENV=production
+   - DB_HOST=localhost
+   - DB_USER=xptndash_user
+   - DB_NAME=xptndash_keepstock_db
+   - DB_PASSWORD=your_password
+   - JWT_SECRET=your_secure_jwt_secret
+   - FRONTEND_URL=https://xptndashboard.site
 
-# Add to crontab (daily at 2 AM)
-0 2 * * * /path/to/backup_script.sh
-```
+6. Restart Aplikasi
+   - Di cPanel, buka "Setup Node.js App"
+   - Pilih aplikasi KeepStock
+   - Klik "Restart"
 
-2. Application Backups
-```bash
-# Backup application files
-tar -czf /path/to/backups/keepstock_app_$(date +%Y%m%d).tar.gz /var/www/keepstock
-```
+## Struktur URL
 
-## Monitoring & Maintenance
-
-1. Log Monitoring
-- Application logs: /var/log/keepstock/
-- Access logs: Apache/Nginx standard locations
-- PM2 logs: pm2 logs keepstock
-
-2. Performance Monitoring
-- Server metrics: top, htop
-- MySQL performance: SHOW PROCESSLIST, slow query log
-- Application metrics: PM2 monitoring
-
-3. Regular Maintenance Tasks
-- Log rotation
-- Database optimization
-- SSL certificate renewal
-- Security updates
-- Backup verification
-
-## Scaling Considerations
-
-1. Database Scaling
-- Implement connection pooling (already configured)
-- Add indexes for frequently queried columns
-- Consider master-slave replication for read scaling
-- Implement query caching
-
-2. Application Scaling
-- Load balancing with multiple Node.js instances
-- Redis for session storage
-- CDN for static assets
-- Containerization with Docker
+- Frontend: https://xptndashboard.site/Kepstock/dist/
+- API Endpoint: https://xptndashboard.site/api/
 
 ## Troubleshooting
 
-Common Issues:
-1. Connection Errors
-   - Check database credentials
-   - Verify network connectivity
-   - Check firewall rules
+1. Jika aset tidak dimuat:
+   - Periksa path di Network tab browser
+   - Pastikan MIME types di .htaccess sesuai
+   - Verifikasi permissions folder dist/assets (755)
 
-2. Performance Issues
-   - Monitor server resources
-   - Check slow query logs
-   - Review application logs
-   - Analyze query execution plans
+2. Jika API tidak merespons:
+   - Periksa error log Node.js di cPanel
+   - Verifikasi konfigurasi Passenger di .htaccess
+   - Pastikan environment variables terset dengan benar
 
-3. Authentication Issues
-   - Verify JWT secret
-   - Check token expiration
-   - Validate user permissions
+3. Jika routing SPA tidak berfungsi:
+   - Pastikan RewriteBase di .htaccess sesuai
+   - Periksa konfigurasi React Router
+   - Verifikasi base URL di vite.config.ts
 
-## Development Guidelines
+## Catatan Penting
 
-1. Code Structure
-   - Frontend: /src
-   - Backend: /server
-   - Database: /database
-   - Configuration: .env
+- File .htaccess ditempatkan di /public_html/Kepstock/
+- Semua request API harus melalui /api/
+- Frontend di-serve dari /Kepstock/dist/
+- Pastikan SSL/HTTPS aktif untuk keamanan
 
-2. API Endpoints
-   - Authentication: /api/auth/*
-   - Users: /api/users/*
-   - Products: /api/products/*
-   - Boxes: /api/boxes/*
-   - Activities: /api/activities/*
-   - Analytics: /api/analytics/*
+## Monitoring
 
-3. Database Schema
-   - users: User accounts and roles
-   - boxes: Storage boxes
-   - box_items: Items in boxes
-   - products: Product catalog
-   - activity_logs: System activity tracking
+- Pantau error log Node.js di cPanel
+- Periksa Apache error log untuk masalah server
+- Monitor penggunaan CPU/Memory di cPanel
 
-4. Security Best Practices
-   - Use prepared statements
-   - Validate all inputs
-   - Implement rate limiting
-   - Regular security audits
-   - Keep dependencies updated
+## Backup
 
-## Support and Resources
-- GitHub Repository: [URL]
-- Issue Tracker: [URL]
-- Documentation: [URL]
+- Backup database secara berkala
+- Simpan salinan konfigurasi .htaccess
+- Arsipkan source code dan build files
+
+## Keamanan
+
+- Gunakan HTTPS
+- Aktifkan rate limiting
+- Set permissions file yang tepat
+- Jaga kerahasiaan JWT_SECRET
+- Update dependencies secara berkala
